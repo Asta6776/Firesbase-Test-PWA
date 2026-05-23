@@ -62,9 +62,9 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  // CHANGED: Swapped signInWithPopup for signInWithRedirect and getRedirectResult
+  import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-  // Your existing Firebase config (ecosaver-9a4f8)
   const firebaseConfig = {
     apiKey: "AIzaSyAYQd-tzlpMYmbWL3KcWd-BO7jQGwoJJiQ",
     authDomain: "ecosaver-9a4f8.firebaseapp.com",
@@ -87,9 +87,8 @@
   async function handleLogin() {
     statusDiv.textContent = "Signing in...";
     try {
-      const result = await signInWithPopup(auth, provider);
-      statusDiv.textContent = `✅ Signed in as ${result.user.displayName}`;
-      console.log("User:", result.user);
+      // CHANGED: Now using Redirect logic to completely support mobile Chrome origins
+      await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error(error);
       statusDiv.textContent = `❌ Error: ${error.message}`;
@@ -109,9 +108,20 @@
   loginBtn.addEventListener('click', handleLogin);
   logoutBtn.addEventListener('click', handleLogout);
 
+  // CHANGED: Listen for the incoming authentication redirect data when the page loads back up
+  getRedirectResult(auth)
+    .then((result) => {
+      if (result?.user) {
+        statusDiv.textContent = `✅ Signed in as ${result.user.displayName}`;
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      statusDiv.textContent = `❌ Error resolving redirect: ${error.message}`;
+    });
+
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // User is signed in
       loginBtn.classList.add('hidden');
       logoutBtn.classList.remove('hidden');
       userInfoDiv.classList.remove('hidden');
@@ -124,7 +134,6 @@
       `;
       statusDiv.textContent = `Welcome, ${user.displayName}!`;
     } else {
-      // User is signed out
       loginBtn.classList.remove('hidden');
       logoutBtn.classList.add('hidden');
       userInfoDiv.classList.add('hidden');
