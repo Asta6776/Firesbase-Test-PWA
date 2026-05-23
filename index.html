@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Firebase Test PWA</title>
   <link rel="manifest" href="test-manifest.json">
-  <meta name="theme-color" content="#1a73e8">
   <style>
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -38,45 +37,43 @@
       margin: 12px 0;
       transition: transform 0.1s;
     }
-    button:active { transform: scale(0.96); }
     button:disabled {
       background: #ccc;
       cursor: not-allowed;
     }
+    button:active:not(:disabled) { transform: scale(0.96); }
     .user-info {
       background: #f1f3f4;
       border-radius: 16px;
       padding: 16px;
       margin: 16px 0;
       text-align: left;
+      word-break: break-all;
     }
     .hidden { display: none; }
-    #status { color: #1e8e3e; font-weight: 500; margin: 12px 0; }
-    .error { color: #d32f2f; }
+    #status { color: #1e8e3e; font-weight: 500; margin: 12px 0; min-height: 20px; }
   </style>
 </head>
 <body>
 <div class="card">
   <h1>🔥 Firebase Test PWA</h1>
-  <p>Click below to sign in with Google (redirect flow)</p>
+  <p>Click below to sign in with Google<br><small style="color:#666;">(Mobile Redirect Flow)</small></p>
+  
   <button id="loginBtn">Sign in with Google</button>
   <button id="logoutBtn" class="hidden">Sign Out</button>
+  
   <div id="userInfo" class="hidden user-info"></div>
-  <div id="status"></div>
-  <div style="margin-top: 24px; font-size: 12px; color: #666;">PWA Test – no data stored<br>🔐 Works offline after first load</div>
+  <div id="status">Checking authentication status...</div>
+  
+  <div style="margin-top: 24px; font-size: 12px; color: #666;">PWA Test – no data stored<br>🔒 Works offline after first load</div>
 </div>
 
 <script type="module">
+  // 1. Import correct mobile-safe Firebase modules
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { 
-    getAuth, 
-    GoogleAuthProvider, 
-    signInWithRedirect, 
-    getRedirectResult, 
-    signOut, 
-    onAuthStateChanged 
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+  // 2. Verified configuration credentials object
   const firebaseConfig = {
     apiKey: "AIzaSyAYQd-tzlpMYmbWL3KcWd-BO7jQGwoJJiQ",
     authDomain: "ecosaver-9a4f8.firebaseapp.com",
@@ -87,102 +84,94 @@
     measurementId: "G-8Y17X16T68"
   };
 
+  // 3. Initialize App and services
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
+  
+  // Force accounts panel to appear during redirect handshakes
+  provider.setCustomParameters({ prompt: 'select_account' });
 
+  // DOM Elements references
   const loginBtn = document.getElementById('loginBtn');
   const logoutBtn = document.getElementById('logoutBtn');
   const userInfoDiv = document.getElementById('userInfo');
   const statusDiv = document.getElementById('status');
 
-  let isProcessing = false;
-
+  // 4. Handle Login trigger
   async function handleLogin() {
-    if (isProcessing) return;
-    isProcessing = true;
     loginBtn.disabled = true;
+    statusDiv.style.color = "#1e8e3e";
     statusDiv.textContent = "Redirecting to Google...";
-    statusDiv.classList.remove('error');
     try {
+      // Execute standard mobile window shift
       await signInWithRedirect(auth, provider);
     } catch (error) {
-      console.error(error);
+      console.error("Login trigger error:", error);
+      statusDiv.style.color = "#d93025";
       statusDiv.textContent = `❌ Error: ${error.message}`;
-      statusDiv.classList.add('error');
       loginBtn.disabled = false;
-      isProcessing = false;
     }
   }
 
+  // 5. Handle Logout trigger
   async function handleLogout() {
     try {
+      statusDiv.textContent = "Signing out...";
       await signOut(auth);
-      statusDiv.textContent = "Signed out.";
-      statusDiv.classList.remove('error');
+      statusDiv.style.color = "#1e8e3e";
+      statusDiv.textContent = "Signed out successfully.";
     } catch (error) {
-      console.error(error);
+      console.error("Logout error:", error);
+      statusDiv.style.color = "#d93025";
       statusDiv.textContent = `❌ Sign out failed: ${error.message}`;
-      statusDiv.classList.add('error');
     }
   }
 
+  // Bind core element events
   loginBtn.addEventListener('click', handleLogin);
   logoutBtn.addEventListener('click', handleLogout);
 
-  onAuthStateChanged(auth, async (user) => {
-    // Process redirect result on every auth change
-    try {
-      const result = await getRedirectResult(auth);
+  // 6. Handle inbound tokens returned from redirect
+  getRedirectResult(auth)
+    .then((result) => {
       if (result?.user) {
-        statusDiv.textContent = `✅ Signed in as ${result.user.displayName}`;
-        statusDiv.classList.remove('error');
+        statusDiv.style.color = "#1e8e3e";
+        statusDiv.textContent = `✅ Successfully authenticated as ${result.user.displayName}`;
       }
-    } catch (error) {
-      console.error("Redirect result error:", error);
-      statusDiv.textContent = `❌ Redirect error: ${error.message}. Check Firebase console: Authorized domains and redirect URIs must include this page.`;
-      statusDiv.classList.add('error');
-    }
+    })
+    .catch((error) => {
+      console.error("Redirect resolution crash:", error);
+      statusDiv.style.color = "#d93025";
+      statusDiv.textContent = `❌ Auth Link Failure: ${error.message}`;
+      loginBtn.disabled = false;
+    });
 
-    // Update UI based on final auth state
+  // 7. Track user session state persistent frames
+  onAuthStateChanged(auth, (user) => {
+    loginBtn.disabled = false;
     if (user) {
       loginBtn.classList.add('hidden');
       logoutBtn.classList.remove('hidden');
       userInfoDiv.classList.remove('hidden');
       userInfoDiv.innerHTML = `
-        <strong>✅ Authenticated</strong><br>
-        Name: ${user.displayName}<br>
-        Email: ${user.email}<br>
-        UID: ${user.uid}<br>
-        <img src="${user.photoURL}" width="48" style="border-radius: 50%; margin-top: 8px;">
+        <strong>📋 Account Information</strong><br>
+        <strong>Name:</strong> ${user.displayName || 'N/A'}<br>
+        <strong>Email:</strong> ${user.email}<br>
+        <strong>UID:</strong> <span style="font-size:11px;color:#555;">${user.uid}</span><br>
+        ${user.photoURL ? `<img src="${user.photoURL}" width="50" style="border-radius: 50%; margin-top: 12px; border: 2px solid #1a73e8;">` : ''}
       `;
-      statusDiv.textContent = `Welcome, ${user.displayName}!`;
-      statusDiv.classList.remove('error');
+      statusDiv.style.color = "#1e8e3e";
+      statusDiv.textContent = `Welcome back, ${user.displayName || 'User'}!`;
     } else {
       loginBtn.classList.remove('hidden');
       logoutBtn.classList.add('hidden');
       userInfoDiv.classList.add('hidden');
-      if (!statusDiv.textContent.includes("Redirect error")) {
-        statusDiv.textContent = "Not signed in.";
-        statusDiv.classList.remove('error');
-      }
+      userInfoDiv.innerHTML = '';
+      statusDiv.style.color = "#666";
+      statusDiv.textContent = "Not signed in.";
     }
-    loginBtn.disabled = false;
-    isProcessing = false;
   });
-</script>
-
-<script>
-  // Register service worker for offline capability
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('test-sw.js').then(reg => {
-        console.log('Service Worker registered', reg);
-      }).catch(err => {
-        console.error('SW registration failed:', err);
-      });
-    });
-  }
 </script>
 </body>
 </html>
