@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Firebase Test PWA</title>
+  <link rel="manifest" href="test-manifest.json">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 40px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      margin: 12px 0;
+      transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.96); }
+    .user-info {
+      background: #f1f3f4;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 16px 0;
+      text-align: left;
+    }
+    .hidden { display: none; }
+    #status { color: #1e8e3e; font-weight: 500; margin: 12px 0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>🔥 Firebase Test</h1>
+  <p>Click below to sign in with Google</p>
+  <button id="loginBtn">Sign in with Google</button>
+  <button id="logoutBtn" class="hidden">Sign Out</button>
+  <div id="userInfo" class="hidden user-info"></div>
+  <div id="status"></div>
+  <div style="margin-top: 24px; font-size: 12px; color: #666;">PWA Test – no data stored</div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  // Your existing Firebase config (ecosaver-9a4f8)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYQd-tzlpMYmbWL3KcWd-BO7jQGwoJJiQ",
+    authDomain: "ecosaver-9a4f8.firebaseapp.com",
+    projectId: "ecosaver-9a4f8",
+    storageBucket: "ecosaver-9a4f8.firebasestorage.app",
+    messagingSenderId: "1050035280306",
+    appId: "1:1050035280306:web:2d30a176f4eec090936cab",
+    measurementId: "G-8Y17X16T68"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const loginBtn = document.getElementById('loginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const userInfoDiv = document.getElementById('userInfo');
+  const statusDiv = document.getElementById('status');
+
+  async function handleLogin() {
+    statusDiv.textContent = "Signing in...";
+    try {
+      const result = await signInWithPopup(auth, provider);
+      statusDiv.textContent = `✅ Signed in as ${result.user.displayName}`;
+      console.log("User:", result.user);
+    } catch (error) {
+      console.error(error);
+      statusDiv.textContent = `❌ Error: ${error.message}`;
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await signOut(auth);
+      statusDiv.textContent = "Signed out.";
+    } catch (error) {
+      console.error(error);
+      statusDiv.textContent = `❌ Sign out failed: ${error.message}`;
+    }
+  }
+
+  loginBtn.addEventListener('click', handleLogin);
+  logoutBtn.addEventListener('click', handleLogout);
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // User is signed in
+      loginBtn.classList.add('hidden');
+      logoutBtn.classList.remove('hidden');
+      userInfoDiv.classList.remove('hidden');
+      userInfoDiv.innerHTML = `
+        <strong>✅ Authenticated</strong><br>
+        Name: ${user.displayName}<br>
+        Email: ${user.email}<br>
+        UID: ${user.uid}<br>
+        <img src="${user.photoURL}" width="48" style="border-radius: 50%; margin-top: 8px;">
+      `;
+      statusDiv.textContent = `Welcome, ${user.displayName}!`;
+    } else {
+      // User is signed out
+      loginBtn.classList.remove('hidden');
+      logoutBtn.classList.add('hidden');
+      userInfoDiv.classList.add('hidden');
+      statusDiv.textContent = "Not signed in.";
+    }
+  });
+</script>
+</body>
+</html>
