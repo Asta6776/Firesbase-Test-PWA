@@ -74,8 +74,8 @@
   import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
   // 2. Verified configuration credentials object
-  const firebaseConfig = {
-    apiKey: "AIzaSyAYQd-tzlpMYmbWL3KcWd-BO7jQGwoJJiQ",
+    const firebaseConfig = {
+    apiKey: "AIzaSyAYQd-tzlpMYmbWL3Kcwd-BO7jQGwoJJiQ", // Fixed lowercase 'c'
     authDomain: "ecosaver-9a4f8.firebaseapp.com",
     projectId: "ecosaver-9a4f8",
     storageBucket: "ecosaver-9a4f8.firebasestorage.app",
@@ -83,6 +83,7 @@
     appId: "1:1050035280306:web:2d30a176f4eec090936cab",
     measurementId: "G-8Y17X16T68"
   };
+
 
   // 3. Initialize App and services
   const app = initializeApp(firebaseConfig);
