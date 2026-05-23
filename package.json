@@ -1,0 +1,24 @@
+{
+  "name": "Firebase Test PWA",
+  "short_name": "FBTest",
+  "description": "Minimal PWA to test Firebase redirect authentication",
+  "start_url": "./firebase-test.html",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#1a73e8",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icons/test-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/test-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
